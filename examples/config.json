@@ -1,0 +1,12 @@
+{
+  "app_data_roots": ["~/.gemini/antigravity", "~/.gemini/antigravity-cli", "~/.gemini/antigravity-ide"],
+  "workspace_roots": ["/absolute/path/to/your/workspace"],
+  "permissions": {
+    "source": "operator configuration; replace with actual Antigravity permissions",
+    "filesystem": "workspace-write",
+    "writable_roots": ["/absolute/path/to/your/workspace"],
+    "network": "restricted",
+    "approval_policy": "on-request"
+  },
+  "native": {"timeout_ms": 90000}
+}

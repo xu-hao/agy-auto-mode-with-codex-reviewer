@@ -1,0 +1,9 @@
+/upstream/
+/build/
+__pycache__/
+*.pyc
+/.venv/
+/.local/
+/.agents/
+/.codex/
+/.aws/
