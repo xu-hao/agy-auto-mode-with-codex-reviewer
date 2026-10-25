@@ -31,7 +31,7 @@ These steps install the bridge for one Antigravity workspace. Repeat the hook re
 
    Edit that JSON file. Replace `/absolute/path/to/your/workspace` in `workspace_roots` and `permissions.writable_roots` with your actual workspace path. Set the permission context to match Antigravity's real filesystem/network restrictions. The default `app_data_roots` cover Antigravity App, CLI and IDE host-log locations. Add every workspace you intend to register.
 
-   The default backend reads supported login state from `CODEX_HOME` or `~/.codex`. Authenticate through your normal Codex login mechanism if needed. See [models and providers](../README.md#models-and-providers) for explicit model/provider configuration.
+   The default backend reads supported login state from `CODEX_HOME` or `~/.codex`. Authenticate through your normal Codex login mechanism if needed. See [models and providers](configuration.md) for explicit model/provider configuration.
 
 3. Verify configuration and actual model access:
 
@@ -53,6 +53,28 @@ These steps install the bridge for one Antigravity workspace. Repeat the hook re
 5. Reload Antigravity. In the CLI, use `/hooks` to check that `codex-guardian-review` is loaded. App and IDE users can inspect their Hooks customization settings. All proposed tool calls now pass through Guardian. An allow assessment returns `auto_approve`, subject to Antigravity's explicit permission rules; a denial or review failure returns `deny`.
 
 The installed hook requires no background daemon. Keep the checkout, binary, configuration and host transcripts protected from agent writes. If other hooks rewrite tool arguments, ensure this review gate runs after those rewrites.
+
+## Use it with agy
+
+Once the bridge is built and the config lists your project, register the hook and launch Antigravity in that project:
+
+```bash
+python3 "$HOME/.local/share/antigravity-guardian/bridge.py" \
+  --config "$HOME/.config/antigravity-guardian/config.json" \
+  install --workspace /absolute/path/to/your/project
+
+cd /absolute/path/to/your/project
+agy
+```
+
+Inside the `agy` session:
+
+1. Type `/hooks` and confirm `codex-guardian-review` is loaded.
+2. Give Antigravity a normal task, such as `Create hello.txt containing hello.`
+3. Antigravity proposes tool calls as usual. Before each call, the hook runs this bridge, which submits the pending action to Guardian without executing it.
+4. An allow verdict lets Antigravity proceed subject to its explicit permission rules. A denial or reviewer failure blocks the call and gives Antigravity the reason.
+
+Launch `agy` with your normal options; no bridge-specific flag is needed. The hook starts the native reviewer automatically, so there is no server to launch separately. Register each workspace you use, and restart/reload an existing session after changing its hooks. For print mode, the same workspace hook applies when you run `agy -p "your task"` from that project.
 
 ## Uninstall
 
