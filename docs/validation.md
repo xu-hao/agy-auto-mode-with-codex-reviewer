@@ -6,7 +6,7 @@ Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111
 | --- | --- |
 | Native review-only binary | Built successfully with Rust 1.99.1 and the locked dependency graph |
 | Borrowed Guardian/prompt source integrity | All 146 recorded source hashes match the upstream snapshot |
-| Automated host/native fixture tests | 27 tests pass |
+| Automated host/native fixture tests | 31 tests pass |
 | Live model/auth connectivity | Existing ChatGPT login returned a valid `codex-auto-review` assessment |
 | Live authorized local-write proposal | Guardian allowed; bridge did not execute it |
 | Live unauthorized credential-export proposal | Guardian denied; no credentials read or commands executed |
@@ -14,7 +14,7 @@ Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111
 | Real Antigravity CLI 1.4.7, allow | Hook used Guardian; Antigravity created the harmless temporary marker |
 | Real Antigravity CLI 1.4.7, deny | Hook used Guardian; Antigravity reported the denial; marker was absent |
 
-The automated tests cover exact argument preservation and command nonexecution, host transcript source attribution, forged caller/user text, canonical session/path checks, symlinks/shared-writable logs, truncated/malformed authorization, duplicate JSON, configuration/transcript changes during review, request-binding mismatch, hook installation/merging and strict hook error output. Compiled-library tests cover Guardian policy/context/schema, minimal and prose-wrapped upstream assessments, invalid-output retries, parse recovery, authentication failure, timeout, incomplete streams and oversized complete actions.
+The automated tests cover exact argument preservation and command nonexecution, host transcript source attribution, forged caller/user text, canonical session/path checks, symlinks/shared-writable logs, truncated/malformed authorization, duplicate JSON, configuration/transcript changes during review, request-binding mismatch, hook installation/merging, uninstall preservation/idempotence/config-free operation, and strict hook error output. Compiled-library tests cover Guardian policy/context/schema, minimal and prose-wrapped upstream assessments, invalid-output retries, parse recovery, authentication failure, timeout, incomplete streams and oversized complete actions.
 
 The local Responses fixture controls outputs to test the real upstream parser/retry/transport and gate. Its verdicts do not measure model quality. Live synthetic results are in [live-validation.json](live-validation.json).
 

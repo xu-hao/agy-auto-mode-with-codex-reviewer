@@ -1,5 +1,7 @@
 import copy
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -129,5 +131,32 @@ class HostTests(unittest.TestCase):
         result=json.loads(path.read_text())
         self.assertIn('other',result)
         self.assertEqual(result['codex-guardian-review']['PreToolUse'][0]['matcher'],'*')
+
+    def test_uninstall_preserves_other_hooks(self):
+        path=self.root/'.agents/hooks.json';path.parent.mkdir()
+        other={'PreToolUse':[{'matcher':'*','hooks':[{'command':'other-hook'}]}],'enabled':False}
+        path.write_text(json.dumps({'other':other}))
+        b.install(self.config_path,self.root)
+        result=b.uninstall(self.root)
+        self.assertTrue(result['uninstalled'])
+        self.assertEqual(json.loads(path.read_text()),{'other':other})
+        self.assertFalse(b.uninstall(self.root)['uninstalled'])
+
+    def test_uninstall_missing_hook_creates_no_files(self):
+        self.assertFalse(b.uninstall(self.root)['uninstalled'])
+        self.assertFalse((self.root/'.agents').exists())
+
+    def test_uninstall_cli_needs_no_config_or_model(self):
+        b.install(self.config_path,self.root)
+        self.config_path.unlink()
+        process=subprocess.run([sys.executable,str(b.ROOT/'bridge.py'),'uninstall','--workspace',str(self.root)],capture_output=True)
+        self.assertEqual(process.returncode,0,process.stderr)
+        self.assertTrue(json.loads(process.stdout)['uninstalled'])
+        self.assertEqual(json.loads((self.root/'.agents/hooks.json').read_text()),{})
+
+    def test_uninstall_leaves_malformed_hooks_untouched(self):
+        path=self.root/'.agents/hooks.json';path.parent.mkdir();path.write_text('{broken')
+        with self.assertRaises(json.JSONDecodeError):b.uninstall(self.root)
+        self.assertEqual(path.read_text(),'{broken')
 
 if __name__=='__main__':unittest.main()

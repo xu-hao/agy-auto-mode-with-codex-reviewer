@@ -22,6 +22,7 @@ MAX_TRANSCRIPT = 32 * 1024 * 1024
 FAILURE = ('Guardian review could not be completed. This is a review failure, '
            'not a determination of unsafe behavior. Resolve the error before retrying; '
            'do not bypass the review gate.')
+HOOK_NAME = 'codex-guardian-review'
 DENIAL = ('Do not pursue the same outcome through a workaround or indirect execution. '
           'Continue only with a materially safer action, or ask the user for guidance.')
 
@@ -267,13 +268,31 @@ def install(config_path, workspace):
     path.parent.mkdir(parents=True,exist_ok=True)
     hooks = strict_json(path.read_bytes()) if path.exists() else {}
     command = shlex.join([sys.executable,str(ROOT/'bridge.py'),'--config',str(Path(config_path).absolute()),'hook'])
-    hooks['codex-guardian-review'] = {'PreToolUse':[{'matcher':'*','hooks':[{'type':'command','command':command,'timeout':130}]}]}
+    hooks[HOOK_NAME] = {'PreToolUse':[{'matcher':'*','hooks':[{'type':'command','command':command,'timeout':130}]}]}
     path.write_text(json.dumps(hooks,indent=2)+'\n')
     return {'installed':str(path),'command':command}
 
+def uninstall(workspace):
+    """Remove this workspace's named bridge hook without needing credentials/config."""
+    path = Path(workspace).expanduser().resolve()/'.agents/hooks.json'
+    result = {'uninstalled':False, 'path':str(path), 'hook':HOOK_NAME}
+    if path.is_symlink():
+        raise BridgeError('refusing to edit a symlinked hooks file')
+    if not path.exists():
+        return result
+    hooks = strict_json(path.read_bytes())
+    if not isinstance(hooks,dict):
+        raise BridgeError('hooks.json must be an object')
+    if HOOK_NAME not in hooks:
+        return result
+    del hooks[HOOK_NAME]
+    path.write_text(json.dumps(hooks,indent=2)+'\n')
+    result['uninstalled'] = True
+    return result
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config',required=True,help='trusted operator-owned JSON config')
+    parser.add_argument('--config',help='trusted operator-owned JSON config; required except for uninstall')
     sub = parser.add_subparsers(dest='mode',required=True)
     for name in ('hook','review','prepare'):
         sub.add_parser(name)
@@ -281,9 +300,15 @@ def main(argv=None):
     doctor.add_argument('--live',action='store_true',help='run a review-only inference connectivity probe')
     command = sub.add_parser('install')
     command.add_argument('--workspace',required=True)
+    command = sub.add_parser('uninstall')
+    command.add_argument('--workspace',required=True)
     args = parser.parse_args(argv)
+    if args.mode != 'uninstall' and not args.config:
+        parser.error('--config is required for this command')
     try:
-        if args.mode == 'install':
+        if args.mode == 'uninstall':
+            result = uninstall(args.workspace)
+        elif args.mode == 'install':
             result = install(args.config,args.workspace)
         else:
             config = config_load(args.config)

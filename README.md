@@ -6,7 +6,9 @@ Antigravity generates the action and runs it after approval. This bridge submits
 
 The native binary has been compiled and tested here. Live reviews using the existing ChatGPT login and **`codex-auto-review`** passed the authorized local-write, unauthorized credential-export, and forged-authorization cases. Proposed commands were never executed by the bridge. See [validation details](docs/validation.md).
 
-## Run
+## Install
+
+Follow the [installation and uninstall guide](docs/install.md) for clone/build steps, protected configuration, verification, hook registration, removal and troubleshooting.
 
 Requirements: Python 3.12+, Rust **1.99.1**, a C/C++ build toolchain, `pkg-config`, OpenSSL development headers, and a supported Codex login or provider credential. On Ubuntu the native dependencies include `build-essential pkg-config libssl-dev`. The first build downloads Rust dependencies and takes several minutes.
 
@@ -29,6 +31,16 @@ python3 bridge.py --config /tmp/guardian-config.json install --workspace /absolu
 The installer merges a named hook into `.agents/hooks.json` without removing other named hooks. It matches **all tools**, including terminal input and file writes, so a rejected command cannot simply be submitted through another tool without review. Reload Antigravity and inspect `/hooks` to confirm it loaded. The installed hook returns `auto_approve` for a completed allow assessment and `deny` for a denial or failure. Antigravity still honors its explicit permission rules.
 
 The real CLI integration tests use temporary workspaces. Run the installer for each workspace where you want the bridge active.
+
+## Uninstall
+
+Run this for each registered workspace, then reload Antigravity:
+
+```bash
+python3 bridge.py uninstall --workspace /absolute/path/to/workspace
+```
+
+This removes only the named bridge hook and preserves other hooks and Antigravity permission lists. It works without the config file or model credentials. See the [uninstall guide](docs/install.md#uninstall) for optional local-file cleanup and recovery when the checkout was already deleted.
 
 ## JSON interface
 
