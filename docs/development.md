@@ -27,3 +27,7 @@ See [validation results](validation.md) for completed checks and their practical
 `install.sh` works from a checkout or through the download-and-run command. It delegates runtime deployment, build caching, private workspace configuration, model-access checks and hook registration to `scripts/setup.py`. `uninstall.sh` delegates to the existing config-free uninstaller.
 
 Installer tests cover private config generation, build reuse, custom-policy/other-hook preservation, failed-access rollback, missing CLI handling, paths with spaces, and refusing unrelated installation directories or workspace-controlled config/runtime paths. Those tests stub compilation and model inference; the native suite still exercises the actual compiled reviewer.
+
+## Audit development
+
+`guardian_bridge/audit.py` writes private JSONL decisions; `audit.sh` and `scripts/audit.py` provide the read-only viewer. Regressions cover exact-command correlation, approved/denied/error separation, stale approvals, metadata-only privacy, symlink/file-permission rejection, concurrent writes, incomplete records and terminal-control escaping.

@@ -13,8 +13,9 @@ import shlex
 import stat
 import subprocess
 import sys
-import time
 import uuid
+
+from guardian_bridge import audit
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_INPUT = 8 * 1024 * 1024
@@ -221,8 +222,22 @@ def native_call(config, mode, request=None):
     return response
 
 def review(payload, config, hook=False, mode='review'):
+    state = {}
+    try:
+        result = _review(payload, config, hook, mode, state)
+    except Exception as error:
+        if mode != 'prepare':
+            audit.failure(config, state.get('request'), payload, hook, error)
+        raise
+    if mode != 'prepare':
+        audit.decision(config, state['request'], state['response'])
+    return result
+
+def _review(payload, config, hook, mode, state):
     request, transcript, initial_digest = normalize(payload,config,hook)
+    state['request'] = request
     response = native_call(config, mode, request)
+    state['response'] = response
     if mode == 'prepare':
         return response
     # Approval is consumed inline for this exact action, with no reusable token
@@ -239,16 +254,6 @@ def review(payload, config, hook=False, mode='review'):
     if response.get('decision') == 'approve':
         if response.get('status') != 'reviewed' or assessment.get('outcome') != 'allow' or response.get('executed') is not False:
             raise BridgeError('inconsistent approval result')
-    if config.get('audit_path'):
-        audit = {k:response.get(k) for k in ('request_id','binding','status','decision','backend','server_model','attempts')}
-        audit['time_ns'] = time.time_ns()
-        audit['assessment'] = {k:assessment.get(k) for k in ('outcome','risk_level','user_authorization')}
-        fd = os.open(Path(config['audit_path']).expanduser(), os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
-        with os.fdopen(fd,'ab') as log:
-            info=os.fstat(log.fileno())
-            if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or info.st_mode & 0o022:
-                raise BridgeError('untrusted audit file')
-            log.write(canonical(audit)+b'\n')
     if hook:
         approved = response.get('decision') == 'approve' 
         reason = assessment.get('rationale', FAILURE)
@@ -303,6 +308,9 @@ def main(argv=None):
     command = sub.add_parser('uninstall')
     command.add_argument('--workspace',required=True)
     args = parser.parse_args(argv)
+    config = None
+    payload = None
+    review_started = False
     if args.mode != 'uninstall' and not args.config:
         parser.error('--config is required for this command')
     try:
@@ -325,8 +333,15 @@ def main(argv=None):
                     result=native_call(config,'review',request)
                     result['live_inference_validated']=result.get('status')=='reviewed'
             else:
-                result=review(read_input(),config,args.mode=='hook',args.mode if args.mode!='hook' else 'review')
+                payload=read_input()
+                review_started=True
+                result=review(payload,config,args.mode=='hook',args.mode if args.mode!='hook' else 'review')
     except Exception as error:
+        if config and args.mode in ('hook','review') and not review_started:
+            try:
+                audit.failure(config, None, payload, args.mode=='hook', error)
+            except Exception as audit_error:
+                sys.stderr.write(f'Guardian audit: {audit_error}\n')
         # A hook error must still print a hard-deny JSON and exit successfully;
         # some hosts ignore a failed command's stdout or fail open on exit != 0.
         sys.stderr.write(f'Guardian bridge: {type(error).__name__}: {error}\n')

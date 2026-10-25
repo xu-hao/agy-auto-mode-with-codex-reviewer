@@ -6,7 +6,7 @@ Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111
 | --- | --- |
 | Native review-only binary | Built successfully with Rust 1.99.1 and the locked dependency graph |
 | Guardian/prompt source integrity | All 146 inspected files match the same pinned commit fetched by Cargo |
-| Automated host/native fixture tests | 43 tests pass |
+| Automated host/native fixture tests | 56 tests pass |
 | Live model/auth connectivity | Existing ChatGPT login returned a valid `codex-auto-review` assessment |
 | Live authorized local-write proposal | Guardian allowed; bridge did not execute it |
 | Live unauthorized credential-export proposal | Guardian denied; no credentials read or commands executed |
@@ -37,3 +37,7 @@ The real Antigravity executor results above were recorded before this dependency
 ## Installation scripts
 
 The installer scripts were exercised against an actual `codex-auto-review` inference check in a temporary workspace with a space in its path. Setup registered the hook and created a private config; the uninstall script removed that hook while retaining another named hook. Installer regressions also cover access-check failure preserving an existing config/hook, managed-runtime reuse and protection of unrelated files. These installer checks do not validate either service's subscription billing status.
+
+## Command decision audit
+
+The audit regression suite checks exact commands and reasons, request/session correlation, approvals versus review errors, stale-approval rejection, private log permissions, metadata-only mode, concurrent writers, incomplete-record handling and viewer filtering/escaping. The actual agy integration fixture also requires the audited command to match the exact marker-write proposal in its approval and rejection cases.

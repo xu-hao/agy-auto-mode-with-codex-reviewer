@@ -18,7 +18,7 @@ sys.path.insert(0, str(SOURCE))
 from guardian_bridge import bridge
 
 PROJECT = 'xu-hao/agy-auto-mode-with-codex-reviewer'
-COPY_FILES = ('bridge.py', 'install.sh', 'uninstall.sh', 'LICENSE', 'UPSTREAM_NOTICE',
+COPY_FILES = ('bridge.py', 'install.sh', 'uninstall.sh', 'audit.sh', 'LICENSE', 'UPSTREAM_NOTICE',
               'README.md', 'upstream.lock.json', 'rust-toolchain.toml')
 COPY_DIRS = ('guardian_bridge', 'native', 'scripts', 'examples', 'docs')
 
@@ -200,6 +200,8 @@ def install(workspace, runtime, config_path=None, model=None):
         }
     if str(workspace) not in config['workspace_roots']:
         config['workspace_roots'].append(str(workspace))
+    config.setdefault('audit_path', str(config_path.with_suffix('.audit.jsonl')))
+    config.setdefault('audit_details', True)
     if model:
         config.setdefault('native', {})['model'] = model
     prepare_runtime(SOURCE, runtime)
@@ -229,6 +231,9 @@ def install(workspace, runtime, config_path=None, model=None):
         raise SetupError('Hook registration failed: '+(registration.stderr.strip() or registration.stdout.strip()))
     say(f'Installed for {workspace}')
     say(f'Configuration: {config_path}')
+    if config.get('audit_path'):
+        say(f'Audit log: {config["audit_path"]}')
+        say(f'View decisions: {shlex_quote(str(runtime/"audit.sh"))} {shlex_quote(str(workspace))}')
     say(f'Next: cd {shlex_quote(str(workspace))} && agy')
     say('In agy, use /hooks to confirm codex-guardian-review is loaded.')
     say(f'Uninstall: {shlex_quote(str(runtime/"uninstall.sh"))} {shlex_quote(str(workspace))}')

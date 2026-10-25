@@ -40,7 +40,7 @@ The installer:
 
 1. Places the runtime outside the workspace, by default in `~/.local/share/antigravity-guardian`.
 2. Installs missing build prerequisites and builds the pinned Codex reviewer libraries on the first run. Subsequent runs reuse an unchanged build.
-3. Creates a private, per-workspace config under `~/.config/antigravity-guardian/workspaces/` without requiring manual JSON editing.
+3. Creates a private, per-workspace config and enables command-decision logging under `~/.config/antigravity-guardian/workspaces/` without requiring manual JSON editing. The log is created on the first decision.
 4. Checks the reviewer with an actual inference request that executes no proposed command.
 5. Merges the named `codex-guardian-review` hook into the workspace's `.agents/hooks.json`, preserving other named hooks and Antigravity's permission rules.
 
@@ -72,6 +72,10 @@ Start `agy` normally from the registered workspace. In the session, type `/hooks
 The hook starts the reviewer automatically before each tool call. An allow verdict lets Antigravity proceed subject to its explicit permission rules. A denial or reviewer failure blocks that call and returns the reason. Restart/reload an existing Antigravity session after changing hooks.
 
 The installed runtime, config and host transcripts should remain protected from agent writes. If other hooks rewrite arguments, ensure this review gate runs after those rewrites.
+
+## View audit history
+
+From the workspace, run `"$HOME/.local/share/antigravity-guardian/audit.sh"`. Use `--follow` to watch new decisions and `--decision rejected` to filter rejections. The installer prints the actual log/viewer paths and preserves explicitly disabled or customized audit settings. See [auditing](auditing.md) for the fields, privacy controls and distinction between approval and execution.
 
 ## Uninstall
 

@@ -18,6 +18,11 @@ from guardian_bridge import bridge as b
 agy=shutil.which('agy')
 if not agy:raise SystemExit('Antigravity CLI agy is required')
 results=[]
+def save_report(records, temporary_root):
+    payload={'results':records,'publication_note':'Workstation home and temporary workspace paths are anonymized; decisions and execution outcomes are unchanged.'}
+    text=json.dumps(payload,indent=2).replace(str(Path.home()),'/home/example').replace(str(temporary_root),'/tmp/guardian-agy-example')
+    (b.ROOT/'docs/antigravity-validation.json').write_text(text+'\n')
+
 with tempfile.TemporaryDirectory(prefix='guardian-agy-') as temp:
     root=Path(temp)
     for case in ('allow','deny'):
@@ -25,13 +30,15 @@ with tempfile.TemporaryDirectory(prefix='guardian-agy-') as temp:
         marker=workspace/'execution-marker'
         audit=root/(case+'-audit.jsonl')
         config={'app_data_roots':[str(Path.home()/'.gemini/antigravity-cli')],
-                'workspace_roots':[str(workspace)],'audit_path':str(audit),
+                'workspace_roots':[str(workspace)],'audit_path':str(audit),'audit_details':True,
                 'permissions':{'source':'operator integration test','filesystem':'workspace-write','writable_roots':[str(workspace)],'network':'restricted'},
                 'native':{'timeout_ms':90000}}
         if case=='deny':
             cargo=shutil.which('cargo') or str(Path.home()/'.cargo/bin/cargo')
+            rustc=shutil.which('rustc') or str(Path(cargo).with_name('rustc'))
+            host=next(line.removeprefix('host: ') for line in subprocess.check_output([rustc,'-vV'],text=True).splitlines() if line.startswith('host: '))
             metadata=json.loads(subprocess.check_output([cargo,'metadata','--manifest-path',
-                str(b.ROOT/'native/Cargo.toml'),'--format-version','1','--locked','--offline']))
+                str(b.ROOT/'native/Cargo.toml'),'--format-version','1','--locked','--offline','--filter-platform',host]))
             pin=json.loads((b.ROOT/'upstream.lock.json').read_text())
             prompts=next(package for package in metadata['packages']
                 if package['name']=='codex-prompts' and package.get('source','').endswith('#'+pin['commit']))
@@ -61,13 +68,13 @@ with tempfile.TemporaryDirectory(prefix='guardian-agy-') as temp:
                                    cwd=workspace,stdout=out,stderr=subprocess.STDOUT,timeout=115)
         records=[json.loads(line) for line in audit.read_text().splitlines()] if audit.exists() else []
         expected='approve' if case=='allow' else 'block'
-        passed=bool(records) and any(r.get('decision')==expected and r.get('status')=='reviewed' for r in records) and marker.exists()==(case=='allow')
+        passed=bool(records) and any(r.get('decision')==expected and r.get('status')=='reviewed' and r.get('command')==command for r in records) and marker.exists()==(case=='allow')
         result={'case':case,'passed':passed,'agy_exit_code':process.returncode,'execution_marker_exists':marker.exists(),
                 'guardian_reviews':records,'agent_output':output.read_text()[-4000:],
                 'hook_input':json.loads(capture.read_text()) if capture.exists() else None}
         results.append(result)
         print(json.dumps(result),flush=True)
         if not passed:
-            (b.ROOT/'docs/antigravity-validation.json').write_text(json.dumps({'results':results},indent=2)+'\n')
+            save_report(results,root)
             raise SystemExit(f'Antigravity {case} validation failed; inspect docs/antigravity-validation.json')
-(b.ROOT/'docs/antigravity-validation.json').write_text(json.dumps({'results':results},indent=2)+'\n')
+save_report(results,root)

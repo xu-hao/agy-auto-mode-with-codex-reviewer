@@ -64,6 +64,8 @@ class SetupTests(unittest.TestCase):
         self.assertEqual(cfg['workspace_roots'],[str(self.workspace)])
         self.assertEqual(cfg['binary'],str(self.runtime/'build/debug/guardian-review'))
         self.assertEqual(stat.S_IMODE(self.config.stat().st_mode),0o600)
+        self.assertEqual(cfg['audit_path'],str(self.config.with_suffix('.audit.jsonl')))
+        self.assertTrue(cfg['audit_details'])
         hooks=json.loads((self.workspace/'.agents/hooks.json').read_text())
         command=hooks[bridge.HOOK_NAME]['PreToolUse'][0]['hooks'][0]['command']
         import shlex
@@ -71,6 +73,9 @@ class SetupTests(unittest.TestCase):
         self.assertEqual(argv[1],str(self.runtime/'bridge.py'))
         self.assertEqual(argv[-1],'hook')
         self.assertTrue((self.runtime/'uninstall.sh').is_file())
+        self.assertTrue((self.runtime/'audit.sh').is_file())
+        viewer=subprocess.run([str(self.runtime/'audit.sh'),'--help'],capture_output=True,text=True,check=True)
+        self.assertIn('--follow',viewer.stdout)
         self.probe.assert_called_once()
 
     def test_second_workspace_reuses_build_and_preserves_first(self):
@@ -86,7 +91,7 @@ class SetupTests(unittest.TestCase):
     def test_install_preserves_custom_policy_and_other_hooks(self):
         self.config.parent.mkdir()
         original={'app_data_roots':['/host/logs'],'workspace_roots':[],
-                  'permissions':{'denied_paths':['/private']},'native':{'policy':'Custom policy','timeout_ms':1234}}
+                  'permissions':{'denied_paths':['/private']},'native':{'policy':'Custom policy','timeout_ms':1234},'audit_path':str(self.root/'custom-audit.jsonl'),'audit_details':False}
         setup.private_json(self.config,original)
         hooks=self.workspace/'.agents/hooks.json';hooks.parent.mkdir()
         hooks.write_text('{"other":{"enabled":false}}')
@@ -94,6 +99,8 @@ class SetupTests(unittest.TestCase):
         cfg=bridge.config_load(self.config)
         self.assertEqual(cfg['permissions'],original['permissions'])
         self.assertEqual(cfg['native']['policy'],'Custom policy')
+        self.assertEqual(cfg['audit_path'],original['audit_path'])
+        self.assertFalse(cfg['audit_details'])
         self.assertEqual(cfg['native']['model'],'explicit-reviewer')
         self.assertEqual(json.loads(hooks.read_text())['other'],{'enabled':False})
 

@@ -21,3 +21,7 @@ A supported custom provider can be supplied as `native.provider`, using Codex’
 Do not set a provider URL from agent-generated tool arguments. Provider settings are trusted operator configuration. The bridge does not automatically import `config.toml`, managed Codex requirements, enterprise policy overrides, plugins or tools. Supply applicable policy through the trusted config. `native.policy` replaces the tenant policy; copy the complete current upstream policy before customizing it.
 
 See [installation](install.md) for the operator config location and workspace setup, and [architecture](architecture.md) for differences from shipping Codex.
+
+## Audit logging
+
+The installer enables per-workspace decision logging with `audit_path` and `audit_details: true`. Logs include exact terminal commands and reviewer reasons; set `audit_details` to `false` for metadata only, or `audit_path` to `null` to disable logging. Existing explicit settings are preserved. See [auditing](auditing.md) for storage, filters and failure behavior.
