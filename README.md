@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="Auto mode for agy logo" width="180" height="180">
-</p>
-
 # Auto mode for agy
 
 Auto mode for Google Antigravity, powered by Codex.
