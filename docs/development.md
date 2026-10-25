@@ -1,6 +1,6 @@
 # Development and testing
 
-Cargo fetches the pinned Codex crates directly from upstream; this repository does not vendor the Codex source tree. Build the native reviewer first, following the [installation guide](install.md#prerequisites) for toolchain requirements:
+Cargo fetches the pinned Codex crates directly from upstream; this repository does not vendor the Codex source tree. Developer builds require Rust 1.99.1, a C/C++ compiler, Git, pkg-config and OpenSSL development headers. Build the native reviewer first:
 
 ```bash
 python3 scripts/build.py
@@ -21,3 +21,9 @@ Fixture tests use the real compiled Guardian libraries with a local Responses SS
 The live scripts require the real model/provider credentials and, for the executor check, the installed `agy` CLI. They write reports under `docs/`; the saved publication report anonymizes workstation and temporary-workspace paths.
 
 See [validation results](validation.md) for completed checks and their practical limits, and [architecture](architecture.md) for the upstream flow and adapters.
+
+## Installer development
+
+`install.sh` works from a checkout or through the download-and-run command. It delegates runtime deployment, build caching, private workspace configuration, model-access checks and hook registration to `scripts/setup.py`. `uninstall.sh` delegates to the existing config-free uninstaller.
+
+Installer tests cover private config generation, build reuse, custom-policy/other-hook preservation, failed-access rollback, missing CLI handling, paths with spaces, and refusing unrelated installation directories or workspace-controlled config/runtime paths. Those tests stub compilation and model inference; the native suite still exercises the actual compiled reviewer.

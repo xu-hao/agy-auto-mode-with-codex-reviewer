@@ -1,114 +1,121 @@
 # Install and uninstall
 
-These steps install the bridge for one Antigravity workspace. Repeat the hook registration for each workspace you want reviewed. The bridge was tested on Linux with Antigravity CLI 1.4.7.
+The scripts handle setup for one Antigravity workspace at a time. This project has been validated on Linux with Antigravity CLI 1.4.7.
 
 ## Prerequisites
 
-- Python 3.12 or later and Git.
-- Rust 1.99.1, installed through rustup. The repository's `rust-toolchain.toml` selects that version.
-- A C/C++ build toolchain, `pkg-config`, and OpenSSL development headers. On Ubuntu: `sudo apt install build-essential pkg-config libssl-dev`.
-- Antigravity with `PreToolUse` hooks.
-- A supported Codex login/provider credential. The tested backend uses an existing ChatGPT login and the `codex-auto-review` model. Model access is account-specific; the live check below verifies it.
+- Active Codex and Google Antigravity subscriptions.
+- Both `codex` and `agy` installed and signed in.
+- Your Codex account must have access to the configured reviewer model. The default ChatGPT setup uses `codex-auto-review`.
+- Python 3.12+; `curl` for the download-and-run command.
+
+These are the project's supported account prerequisites. The installer checks CLI presence and actual Codex reviewer access; it does not inspect either account's billing or subscription status. Open `agy` and sign in normally; use `codex login` for Codex if needed.
+
+On Ubuntu/Debian, the installer can install missing C/C++ build tools, Git, `pkg-config` and OpenSSL development headers through `apt-get`. It uses `sudo` when necessary. It installs Rust through the official rustup installer and selects the version pinned by this project. Other Linux distributions need those system build prerequisites installed first.
 
 ## Install
 
-1. Clone and build outside the workspaces your generating agent can modify:
-
-   ```bash
-   git clone --depth 1 https://github.com/xu-hao/agy-auto-mode-with-codex-reviewer.git "$HOME/.local/share/antigravity-guardian"
-   cd "$HOME/.local/share/antigravity-guardian"
-   python3 scripts/build.py
-   ```
-
-   The first build downloads the pinned Codex crates and their dependencies, then compiles the review-only library host. It takes several minutes. The output binary is `build/debug/guardian-review`. No model credentials are required to build it.
-
-2. Create a protected operator configuration:
-
-   ```bash
-   install -d -m 700 "$HOME/.config/antigravity-guardian"
-   install -m 600 examples/config.json "$HOME/.config/antigravity-guardian/config.json"
-   ```
-
-   Edit that JSON file. Replace `/absolute/path/to/your/workspace` in `workspace_roots` and `permissions.writable_roots` with your actual workspace path. Set the permission context to match Antigravity's real filesystem/network restrictions. The default `app_data_roots` cover Antigravity App, CLI and IDE host-log locations. Add every workspace you intend to register.
-
-   The default backend reads supported login state from `CODEX_HOME` or `~/.codex`. Authenticate through your normal Codex login mechanism if needed. See [models and providers](configuration.md) for explicit model/provider configuration.
-
-3. Verify configuration and actual model access:
-
-   ```bash
-   python3 bridge.py --config "$HOME/.config/antigravity-guardian/config.json" doctor
-   python3 bridge.py --config "$HOME/.config/antigravity-guardian/config.json" doctor --live
-   ```
-
-   `doctor --live` must report `live_inference_validated: true`. Either an allow or deny assessment can validate connectivity; the connectivity probe never executes its proposed command. Resolve authentication, model-access or provider errors before registering the hook.
-
-4. Register the hook:
-
-   ```bash
-   python3 bridge.py --config "$HOME/.config/antigravity-guardian/config.json" install --workspace /absolute/path/to/your/workspace
-   ```
-
-   This merges the named `codex-guardian-review` hook into the workspace's `.agents/hooks.json`. Existing named hooks are preserved. The registered command uses absolute paths to this checkout, its configuration and your Python interpreter, so keep those paths stable or rerun the installer after moving them.
-
-5. Reload Antigravity. In the CLI, use `/hooks` to check that `codex-guardian-review` is loaded. App and IDE users can inspect their Hooks customization settings. All proposed tool calls now pass through Guardian. An allow assessment returns `auto_approve`, subject to Antigravity's explicit permission rules; a denial or review failure returns `deny`.
-
-The installed hook requires no background daemon. Keep the checkout, binary, configuration and host transcripts protected from agent writes. If other hooks rewrite tool arguments, ensure this review gate runs after those rewrites.
-
-## Use it with agy
-
-Once the bridge is built and the config lists your project, register the hook and launch Antigravity in that project:
+From the workspace you want to use with agy:
 
 ```bash
-python3 "$HOME/.local/share/antigravity-guardian/bridge.py" \
-  --config "$HOME/.config/antigravity-guardian/config.json" \
-  install --workspace /absolute/path/to/your/project
-
-cd /absolute/path/to/your/project
+curl -fsSL https://raw.githubusercontent.com/xu-hao/agy-auto-mode-with-codex-reviewer/main/install.sh | bash
 agy
 ```
 
-Inside the `agy` session:
+You can also name the workspace explicitly:
 
-1. Type `/hooks` and confirm `codex-guardian-review` is loaded.
-2. Give Antigravity a normal task, such as `Create hello.txt containing hello.`
-3. Antigravity proposes tool calls as usual. Before each call, the hook runs this bridge, which submits the pending action to Guardian without executing it.
-4. An allow verdict lets Antigravity proceed subject to its explicit permission rules. A denial or reviewer failure blocks the call and gives Antigravity the reason.
+```bash
+curl -fsSL https://raw.githubusercontent.com/xu-hao/agy-auto-mode-with-codex-reviewer/main/install.sh | bash -s -- /absolute/path/to/project
+cd /absolute/path/to/project
+agy
+```
 
-Launch `agy` with your normal options; no bridge-specific flag is needed. The hook starts the native reviewer automatically, so there is no server to launch separately. Register each workspace you use, and restart/reload an existing session after changing its hooks. For print mode, the same workspace hook applies when you run `agy -p "your task"` from that project.
+For a local checkout:
+
+```bash
+./install.sh /absolute/path/to/project
+```
+
+The installer:
+
+1. Places the runtime outside the workspace, by default in `~/.local/share/antigravity-guardian`.
+2. Installs missing build prerequisites and builds the pinned Codex reviewer libraries on the first run. Subsequent runs reuse an unchanged build.
+3. Creates a private, per-workspace config under `~/.config/antigravity-guardian/workspaces/` without requiring manual JSON editing.
+4. Checks the reviewer with an actual inference request that executes no proposed command.
+5. Merges the named `codex-guardian-review` hook into the workspace's `.agents/hooks.json`, preserving other named hooks and Antigravity's permission rules.
+
+A failed reviewer check does not register a new hook or replace an existing operator config. Fix the account/model error and rerun the installer. An existing installation directory without the installer's marker is left untouched; run the installer from that checkout or choose another `--install-dir`.
+
+The generated configuration does not invent filesystem or network grants. It labels unreported permissions as unknown and leaves Antigravity authoritative for execution. An existing config's policies, provider settings and permissions are preserved. A normal existing Guardian hook's config is detected automatically on reinstall; custom hook commands require an explicit `--config` to replace them. If needed, edit the private config path printed by the installer to provide more detailed operator policy.
+
+The default backend reads supported credentials from `CODEX_HOME` or `~/.codex`. See [model and provider configuration](configuration.md) for custom backends.
+
+### Options
+
+```bash
+./install.sh [WORKSPACE] [--install-dir PATH] [--config PATH] [--model MODEL]
+```
+
+| Option | Behavior |
+| --- | --- |
+| `WORKSPACE` | Defaults to the current directory. |
+| `--install-dir PATH` | Changes the runtime location; it must be outside the workspace. |
+| `--config PATH` | Preserves and extends an existing operator config; it must be outside the workspace. |
+| `--model MODEL` | Explicitly selects the reviewer model; access is checked before activation. |
+
+`XDG_DATA_HOME` and `XDG_CONFIG_HOME` are honored. The installer prints the actual runtime, config and uninstall paths. It also honors existing Rust/OpenSSL build environment settings.
+
+## Use it with agy
+
+Start `agy` normally from the registered workspace. In the session, type `/hooks` and confirm `codex-guardian-review` is loaded, then give agy your task. The same hook applies to `agy -p "your task"` from that workspace.
+
+The hook starts the reviewer automatically before each tool call. An allow verdict lets Antigravity proceed subject to its explicit permission rules. A denial or reviewer failure blocks that call and returns the reason. Restart/reload an existing Antigravity session after changing hooks.
+
+The installed runtime, config and host transcripts should remain protected from agent writes. If other hooks rewrite arguments, ensure this review gate runs after those rewrites.
 
 ## Uninstall
 
-Run this from the checkout for **each registered workspace**:
+From the registered workspace:
 
 ```bash
-python3 bridge.py uninstall --workspace /absolute/path/to/your/workspace
+"$HOME/.local/share/antigravity-guardian/uninstall.sh"
 ```
 
-Uninstall does not require the config file, credentials or a working native binary. It removes only the `codex-guardian-review` entry and preserves other hooks. Repeating it is harmless; if the hook is absent, the result reports `uninstalled: false`. An otherwise empty `hooks.json` remains as `{}`.
-
-Reload Antigravity and check `/hooks` to confirm the bridge is absent. Antigravity then uses its normal permission flow for that workspace. Its allow/deny lists, other hooks and Codex login remain intact. The operator config, audit logs and checkout are retained.
-
-After unregistering the bridge from every workspace, you can optionally remove its local configuration and checkout:
+Or from a local checkout, naming the workspace:
 
 ```bash
-rm -f -- "$HOME/.config/antigravity-guardian/config.json"
-rm -rf -- "$HOME/.local/share/antigravity-guardian"
+./uninstall.sh /absolute/path/to/project
 ```
 
-These paths match the installation commands above. Audit logs at a custom `audit_path` can be retained or removed separately.
+Use the path printed during installation if you selected another runtime directory. Repeat for every workspace where you enabled it, then reload Antigravity and confirm the bridge is absent from `/hooks`.
 
-If the checkout has already been deleted, edit each workspace's `.agents/hooks.json` and remove the top-level `codex-guardian-review` entry, then reload Antigravity. Preserve the other entries and valid JSON.
+Uninstall removes only the `codex-guardian-review` hook. It needs no Rust toolchain, config file, credentials or reviewer access. Other hooks, permission rules, credentials, configs, logs and installed files are preserved. Repeating it is harmless.
+
+After unregistering every workspace, you can delete the installed runtime and generated configs if you want full local-file cleanup. If the checkout/runtime has already been deleted, remove the top-level `codex-guardian-review` entry from each workspace's `.agents/hooks.json`, preserving its other entries and valid JSON.
+
+## Manual setup
+
+For an explicitly managed deployment, the underlying commands remain available:
+
+```bash
+python3 scripts/build.py
+python3 bridge.py --config /path/to/operator-config.json doctor --live
+python3 bridge.py --config /path/to/operator-config.json install --workspace /path/to/project
+python3 bridge.py uninstall --workspace /path/to/project
+```
+
+Start a manual config from `examples/config.json` and set its actual workspace and execution permissions. The script-based installer is the normal end-user workflow.
 
 ## Troubleshooting
 
 | Symptom | Action |
 | --- | --- |
-| Hook absent in `/hooks` | Check the workspace registration, restart/reload Antigravity, and inspect `.agents/hooks.json`. |
-| Native binary missing | Run `python3 scripts/build.py` from the checkout. |
-| Config rejected as shared-writable | Run `chmod 600` on the operator config and protect its parent directory. |
-| Model/authentication failure | Run `doctor --live` using the intended Codex/provider credentials. A catalog listing alone does not validate inference. |
-| Host transcript rejected | Check `app_data_roots`, conversation ID and the host's actual transcript path. The adapter accepts canonical `transcript.jsonl` and CLI 1.4.7's `transcript_full.jsonl`. |
-| Review fails after moving the checkout/config | Rerun the installer with the new absolute paths. |
-| Uninstall reports malformed JSON | Repair `hooks.json` first. The uninstaller leaves malformed content untouched. |
+| Missing `codex` or `agy` | Install both CLIs and sign in using active subscriptions before rerunning the installer. |
+| Reviewer account/model failure | Confirm Codex credentials and reviewer-model access; rerun the installer after resolving them. |
+| System dependency installation fails | Install the compiler, Git, `pkg-config` and OpenSSL development headers with your system package manager, then rerun. |
+| Existing install directory is refused | Run that checkout's `install.sh`, or select an empty `--install-dir`; unrelated files are preserved. |
+| Hook absent in `/hooks` | Confirm you launched agy from the registered workspace and restart/reload the session. |
+| Host transcript rejected | Check the config's `app_data_roots` and the host's conversation log path. Canonical `transcript.jsonl` and CLI 1.4.7's `transcript_full.jsonl` are supported. |
+| Uninstall encounters malformed hook JSON | Repair `.agents/hooks.json` first; malformed content is left untouched. |
 
-See [architecture and trust boundaries](architecture.md) for the exact upstream components and runtime differences, and [validation](validation.md) for the tests performed.
+See [architecture](architecture.md) for the upstream implementation and trust boundaries, and [the contributor guide](development.md) for development checks.

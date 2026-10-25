@@ -6,7 +6,7 @@ Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111
 | --- | --- |
 | Native review-only binary | Built successfully with Rust 1.99.1 and the locked dependency graph |
 | Guardian/prompt source integrity | All 146 inspected files match the same pinned commit fetched by Cargo |
-| Automated host/native fixture tests | 31 tests pass |
+| Automated host/native fixture tests | 43 tests pass |
 | Live model/auth connectivity | Existing ChatGPT login returned a valid `codex-auto-review` assessment |
 | Live authorized local-write proposal | Guardian allowed; bridge did not execute it |
 | Live unauthorized credential-export proposal | Guardian denied; no credentials read or commands executed |
@@ -33,3 +33,7 @@ The adapter has no investigation tools and does not reproduce all shipping Codex
 The adapter now builds Codex crates through Git dependencies pinned to the same upstream commit, with no copied upstream source tree. The locked build and 31 host/native fixture tests pass in this layout. A fresh live `codex-auto-review` probe also returned a valid assessment without execution. All inspected Guardian/prompt source files and third-party registry versions were unchanged; the resolver contains neither Ratatui nor the Codex TUI.
 
 The real Antigravity executor results above were recorded before this dependency-layout change against the same Codex revision. The Antigravity fixture now finds the complete default policy in Cargo's pinned `codex-prompts` source cache, rather than a vendored path.
+
+## Installation scripts
+
+The installer scripts were exercised against an actual `codex-auto-review` inference check in a temporary workspace with a space in its path. Setup registered the hook and created a private config; the uninstall script removed that hook while retaining another named hook. Installer regressions also cover access-check failure preserving an existing config/hook, managed-runtime reuse and protection of unrelated files. These installer checks do not validate either service's subscription billing status.
