@@ -1,6 +1,6 @@
 # Development and testing
 
-Build the native reviewer first, following the [installation guide](install.md#prerequisites) for toolchain requirements:
+Cargo fetches the pinned Codex crates directly from upstream; this repository does not vendor the Codex source tree. Build the native reviewer first, following the [installation guide](install.md#prerequisites) for toolchain requirements:
 
 ```bash
 python3 scripts/build.py

@@ -15,12 +15,12 @@ These steps install the bridge for one Antigravity workspace. Repeat the hook re
 1. Clone and build outside the workspaces your generating agent can modify:
 
    ```bash
-   git clone https://github.com/xu-hao/agy-auto-mode-with-codex-reviewer.git "$HOME/.local/share/antigravity-guardian"
+   git clone --depth 1 https://github.com/xu-hao/agy-auto-mode-with-codex-reviewer.git "$HOME/.local/share/antigravity-guardian"
    cd "$HOME/.local/share/antigravity-guardian"
    python3 scripts/build.py
    ```
 
-   The first build downloads dependencies and takes several minutes. The output binary is `build/debug/guardian-review`. No model credentials are required to build it.
+   The first build downloads the pinned Codex crates and their dependencies, then compiles the review-only library host. It takes several minutes. The output binary is `build/debug/guardian-review`. No model credentials are required to build it.
 
 2. Create a protected operator configuration:
 

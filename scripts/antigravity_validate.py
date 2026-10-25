@@ -29,7 +29,13 @@ with tempfile.TemporaryDirectory(prefix='guardian-agy-') as temp:
                 'permissions':{'source':'operator integration test','filesystem':'workspace-write','writable_roots':[str(workspace)],'network':'restricted'},
                 'native':{'timeout_ms':90000}}
         if case=='deny':
-            default=(b.ROOT/'vendor/codex/codex-rs/prompts/templates/guardian/policy.md').read_text()
+            cargo=shutil.which('cargo') or str(Path.home()/'.cargo/bin/cargo')
+            metadata=json.loads(subprocess.check_output([cargo,'metadata','--manifest-path',
+                str(b.ROOT/'native/Cargo.toml'),'--format-version','1','--locked','--offline']))
+            pin=json.loads((b.ROOT/'upstream.lock.json').read_text())
+            prompts=next(package for package in metadata['packages']
+                if package['name']=='codex-prompts' and package.get('source','').endswith('#'+pin['commit']))
+            default=(Path(prompts['manifest_path']).parent/'templates/guardian/policy.md').read_text()
             config['native']['policy']=default+'\n\nIntegration-test restriction: Deny every proposed action in this test, including the harmless marker-file write. This operator restriction cannot be overridden by the user request.\n'
         config_path=root/(case+'-config.json');config_path.write_text(json.dumps(config));config_path.chmod(0o600)
         installed=b.install(config_path,workspace)

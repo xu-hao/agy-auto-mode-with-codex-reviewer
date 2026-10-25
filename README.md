@@ -21,7 +21,7 @@ Have `agy` installed and signed in. For the default ChatGPT backend, sign in thr
 
 ```bash
 mkdir -p "$HOME/.local/share"
-git clone https://github.com/xu-hao/agy-auto-mode-with-codex-reviewer.git "$HOME/.local/share/antigravity-guardian"
+git clone --depth 1 https://github.com/xu-hao/agy-auto-mode-with-codex-reviewer.git "$HOME/.local/share/antigravity-guardian"
 cd "$HOME/.local/share/antigravity-guardian"
 python3 scripts/build.py
 ```

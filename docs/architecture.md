@@ -4,7 +4,17 @@ Source: [openai/codex at the pinned revision](https://github.com/openai/codex/tr
 
 ## Source borrowing
 
-`vendor/codex` is an unmodified source snapshot of that commit, including LICENSE and NOTICE. It has no Git history, fork branch, or patched reviewer code. The separate `native` Cargo workspace depends on the borrowed crates by path. `native/Cargo.lock` pins the adapter’s resolved dependency graph. `scripts/vendor.py` reconstructs the snapshot with `git archive`, and `vendor/guardian.sha256.json` records hashes of the inspected Guardian and prompt files. `scripts/build.py` verifies those hashes before compiling. The unused `upstream` clone is a provenance/download cache and can be removed.
+The separate `native` Cargo workspace uses Codex crates directly as Git dependencies pinned to that commit. The Guardian reviewer and context crates are not published on crates.io (both registry API lookups returned 404 when checked on 2026-10-25), so Cargo fetches the upstream repository into its normal cache and builds the selected libraries from source. There is no copied Codex source tree in this repository and no Codex fork or reviewer patch.
+
+`native/Cargo.lock` pins the complete dependency graph. `upstream.lock.json` records the Codex revision, and `scripts/build.py` checks every direct Codex crate against that pin before invoking a locked Cargo build. A first build needs network access to fetch dependencies; subsequent builds can reuse Cargo's cache. The adapter does not build Codex's CLI or terminal UI.
+
+Codex's normal third-party dependencies are still resolved by Cargo. The adapter retains the two pinned OpenAI websocket fork overrides used by upstream, which supply its websocket features; these are Cargo dependencies, not copied source files. All other third-party registry versions were retained when moving from the original source snapshot to Git dependencies.
+
+### Why the upstream notice mentions Ratatui
+
+Codex itself contains a terminal implementation derived from Ratatui in `codex-rs/tui/src/custom_terminal.rs`. Its source header and the upstream NOTICE carry that attribution. `UPSTREAM_NOTICE` preserves Codex's notice, including that entry. The adapter's resolved dependency graph contains neither `ratatui` nor `codex-tui`.
+
+The initial implementation copied the entire Codex snapshot, which unnecessarily brought in terminal UI source. That snapshot has been replaced by the pinned crate dependencies. The original 146 inspected Guardian/prompt files were byte-for-byte identical to the corresponding files fetched by Cargo at the same commit.
 
 All four requested paths exist at the pin:
 

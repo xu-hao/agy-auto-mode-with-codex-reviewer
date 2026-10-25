@@ -12,25 +12,24 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { version = "1" }
-codex-analytics = { path = "../vendor/codex/codex-rs/analytics" }
-codex-api = { path = "../vendor/codex/codex-rs/codex-api" }
-codex-client = { path = "../vendor/codex/codex-rs/codex-client" }
-codex-context-fragments = { path = "../vendor/codex/codex-rs/context-fragments" }
-codex-guardian-context = { path = "../vendor/codex/codex-rs/guardian-context" }
-codex-guardian-reviewer = { path = "../vendor/codex/codex-rs/ext/guardian-reviewer" }
-codex-http-client = { path = "../vendor/codex/codex-rs/http-client" }
-codex-login = { path = "../vendor/codex/codex-rs/login" }
-codex-model-provider = { path = "../vendor/codex/codex-rs/model-provider" }
-codex-model-provider-info = { path = "../vendor/codex/codex-rs/model-provider-info" }
-codex-models-manager = { path = "../vendor/codex/codex-rs/models-manager" }
-codex-prompts = { path = "../vendor/codex/codex-rs/prompts" }
-codex-protocol = { path = "../vendor/codex/codex-rs/protocol" }
+codex-analytics = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-api = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-client = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-context-fragments = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-guardian-context = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-guardian-reviewer = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-http-client = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-login = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-model-provider = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-model-provider-info = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-models-manager = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-prompts = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
+codex-protocol = { git = "https://github.com/openai/codex.git", rev = "970111f6cb62cc02fe36a82ea7d71b37a2889c97" }
 futures = { version = "0.3", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-util"] }
 
 [patch.crates-io]
-crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "ed1cdab335221515706178d68495bba2aed1924f" }
 tokio-tungstenite = { git = "https://github.com/openai-oss-forks/tokio-tungstenite", rev = "0e5b2d73aa18dd9f0a50ee9ff199d5aef7594186" }
 tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }

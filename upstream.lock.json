@@ -3,5 +3,5 @@
   "commit": "970111f6cb62cc02fe36a82ea7d71b37a2889c97",
   "rust_toolchain": "1.99.1",
   "inspected_at": "2026-10-25",
-  "adapter": "Standalone native/ crate with path dependencies on unmodified vendor/codex source snapshot; no fork or upstream code patches"
+  "adapter": "Standalone native/ crate using Codex Git crate dependencies pinned to this revision; no copied source tree or upstream code patches"
 }

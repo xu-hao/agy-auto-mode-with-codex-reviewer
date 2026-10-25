@@ -5,7 +5,7 @@ Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111
 | Check | Result |
 | --- | --- |
 | Native review-only binary | Built successfully with Rust 1.99.1 and the locked dependency graph |
-| Borrowed Guardian/prompt source integrity | All 146 recorded source hashes match the upstream snapshot |
+| Guardian/prompt source integrity | All 146 inspected files match the same pinned commit fetched by Cargo |
 | Automated host/native fixture tests | 31 tests pass |
 | Live model/auth connectivity | Existing ChatGPT login returned a valid `codex-auto-review` assessment |
 | Live authorized local-write proposal | Guardian allowed; bridge did not execute it |
@@ -27,3 +27,9 @@ The sandbox initially prevented the test CLI from writing its ordinary session l
 No credentials are missing for this environment’s tested ChatGPT backend, and there is no outstanding live-model validation step for it. Other accounts, public API-key access and custom providers remain account-specific: run `doctor --live` using their credentials. A model catalog listing alone is not treated as successful inference. The transport did not return a server-model header, so `server_model` is null; recorded `model` is the requested provider model, and no equivalence claim is made about an opaque backend snapshot.
 
 The adapter has no investigation tools and does not reproduce all shipping Codex runtime behavior. The trust and deployment limits in [architecture.md](architecture.md) still apply.
+
+## Dependency layout update
+
+The adapter now builds Codex crates through Git dependencies pinned to the same upstream commit, with no copied upstream source tree. The locked build and 31 host/native fixture tests pass in this layout. A fresh live `codex-auto-review` probe also returned a valid assessment without execution. All inspected Guardian/prompt source files and third-party registry versions were unchanged; the resolver contains neither Ratatui nor the Codex TUI.
+
+The real Antigravity executor results above were recorded before this dependency-layout change against the same Codex revision. The Antigravity fixture now finds the complete default policy in Cargo's pinned `codex-prompts` source cache, rather than a vendored path.
