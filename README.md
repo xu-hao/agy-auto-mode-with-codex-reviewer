@@ -1,6 +1,10 @@
-# Antigravity → Codex Guardian
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Auto mode for agy logo" width="180" height="180">
+</p>
 
-Run `agy` normally, with Codex Guardian reviewing proposed tool calls before Antigravity executes them.
+# Auto mode for agy
+
+Auto mode for Google Antigravity, powered by Codex.
 
 ## Install and use with agy
 
@@ -71,7 +75,7 @@ Inside `agy`, type `/hooks` and confirm `codex-guardian-review` is loaded. Then 
 
 > Create hello.txt containing hello.
 
-Antigravity proposes each tool call; the hook submits it to Guardian for a model-based verdict. An allow verdict lets Antigravity execute the call subject to its own permission rules. A denial or reviewer failure blocks the call and gives Antigravity the reason. Existing allow/deny lists remain in effect.
+Codex handles approvals automatically while agy works. Approved actions can proceed; blocked actions are reported back to agy. Existing Antigravity allow/deny lists remain in effect.
 
 The hook starts the reviewer automatically. Register each workspace you use, and restart or reload an existing Antigravity session after changing its hooks. The same hook applies to `agy -p "your task"` when run from that workspace.
 
@@ -96,4 +100,4 @@ This removes only the bridge's named hook and preserves other hooks and permissi
 
 ## License
 
-Apache-2.0. This project borrows unmodified Codex Guardian source pinned to commit `970111f6cb62cc02fe36a82ea7d71b37a2889c97`; it maintains no Codex fork. See [LICENSE](LICENSE) and [upstream notices](UPSTREAM_NOTICE). The [architecture documentation](docs/architecture.md) explains how the review-only host differs from the full Codex runtime.
+Apache-2.0. See [LICENSE](LICENSE) and [upstream notices](UPSTREAM_NOTICE).
