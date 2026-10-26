@@ -48,6 +48,7 @@ Or pass a workspace explicitly: `./uninstall.sh /path/to/your/project` from this
 - [Installation, options and troubleshooting](docs/install.md)
 - [Models, authentication and provider configuration](docs/configuration.md)
 - [Audit logs and decision history](docs/auditing.md)
+- [Review context and known limitations](docs/context-and-limitations.md)
 - [JSON interface](docs/interface.md)
 - [Architecture, upstream reuse and trust boundaries](docs/architecture.md)
 - [Contributor guide](docs/development.md)

@@ -1,6 +1,6 @@
 # Audit approvals and rejections
 
-The installer enables a private JSONL decision log for each workspace. It records proposed terminal commands, Guardian's verdict and rationale, the working directory, timestamp, session/request IDs, model and risk/authorization metadata. Other tools are recorded by name and a relevant target path where available; complete file contents, full tool arguments and conversation transcripts are not copied into the audit log.
+The installer enables a private JSONL decision log for each workspace. It records proposed terminal commands, Guardian's verdict and rationale, the working directory and its source, timestamp, session/request IDs, model and risk/authorization metadata. Other tools are recorded by name and a relevant target path where available; complete file contents, full tool arguments and conversation transcripts are not copied into the audit log.
 
 If you installed before this feature was added, rerun the normal installer once. New records begin when logging is enabled; earlier commands cannot be recovered from old verdict hashes.
 
@@ -58,6 +58,8 @@ The viewer needs no model access, Rust toolchain or active review process. It de
 - `ERROR`: Review could not be completed, or the proposed approval failed a bridge check. Execution is blocked, but the error does not classify the action as unsafe.
 
 The log records the bridge's approval decision. It does not prove that Antigravity executed the command: another permission rule may still block it, or execution may fail. Each record therefore has `execution_status: "not_observed"`.
+
+The JSON record's `cwd_source` distinguishes explicit tool directories, inferred workspace directories and public CLI declarations. An inferred workspace is not proof of the executor's actual cwd; see [context and limitations](context-and-limitations.md).
 
 Authorization changes during review are logged as errors, not approvals. Dry-run `prepare` calls and installer connectivity probes do not create action-decision records.
 

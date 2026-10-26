@@ -161,7 +161,11 @@ def normalize(payload, config, hook):
             workspaces = payload.get('workspacePaths', [])
             cwd = workspaces[0] if len(workspaces) == 1 else None
         request_id = str(uuid.uuid4())
-        environment = {'shell':'bash', 'platform':sys.platform, 'step_index':payload.get('stepIdx'),
+        # The hook process's SHELL/platform/environment are not proof of the
+        # pending action's execution environment. Keep missing facts explicit.
+        environment = {'shell':None, 'shell_source':'not reported by Antigravity hook',
+                       'shell_options':None, 'environment_variables':None,
+                       'bridge_platform':sys.platform, 'step_index':payload.get('stepIdx'),
                        'antigravity_model':payload.get('modelName'),
                        'workspace_paths':payload.get('workspacePaths', []),
                        'declared_by':'antigravity-hook-host', 'cwd_source':cwd_source}
@@ -176,6 +180,20 @@ def normalize(payload, config, hook):
         text(action.get('tool'), 'tool name')
         cwd = payload.get('cwd')
         environment = payload.get('environment', {})
+        if not isinstance(environment, dict):
+            raise BridgeError('environment must be an object')
+        environment = dict(environment)
+        environment.update(declared_by='review CLI caller; execution state not independently verified',
+                           cwd_source='explicit request cwd; execution directory not independently verified')
+        environment.setdefault('shell', None)
+        environment['shell_source'] = 'caller supplied; not independently verified' if environment['shell'] is not None else 'not supplied'
+        environment.setdefault('shell_options', None)
+        environment.setdefault('environment_variables', None)
+        # The authoritative cwd is the separate request field. Do not let a
+        # second, contradictory directory appear in metadata sent to the model.
+        if 'cwd' in environment and environment['cwd'] != cwd:
+            raise BridgeError('environment cwd disagrees with request cwd')
+        environment.pop('cwd', None)
         # Caller evidence is useful but does not establish authorization.
         evidence = payload.get('evidence', {})
         for field in ('history','original_user_request'):

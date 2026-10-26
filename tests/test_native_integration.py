@@ -124,6 +124,52 @@ class NativeIntegration(test_bridge.HostTests):
         self.assertIn('tool result',transcript)
         self.assertEqual(len(self.fixture.requests),0)
 
+    def execution_context(self, input):
+        developer=input[0]
+        self.assertEqual(developer['role'],'developer')
+        return json.loads(developer['content'][0]['text'].split('\nExecution context: ',1)[1])
+
+    def test_native_sends_exact_cwd_when_arguments_omit_it(self):
+        cwd=self.root/'packages'/'api "quoted"'
+        payload=self.direct_payload(cwd,{'shell':'/bin/zsh','shell_options':['pipefail']})
+        self.assertNotIn('Cwd',payload['action']['arguments'])
+        result=b.review(payload,self.config,False)
+        self.assertEqual(result['decision'],'approve')
+        context=self.execution_context(self.fixture.requests[0]['input'])
+        self.assertEqual(context['cwd'],str(cwd))
+        self.assertEqual(context['environment']['shell'],'/bin/zsh')
+        self.assertEqual(context['environment']['shell_options'],['pipefail'])
+        self.assertIn('not independently verified',context['environment']['cwd_source'])
+        self.assertFalse((cwd/'sentinel').exists())
+
+    def test_native_inferred_directory_and_unknowns_are_explicit(self):
+        del self.payload['toolCall']['args']['Cwd']
+        prepared=b.review(self.payload,self.config,True,'prepare')
+        context=self.execution_context(prepared['input'])
+        self.assertEqual(context['cwd'],str(self.root))
+        self.assertIn('inferred single workspace',context['environment']['cwd_source'])
+        self.assertIsNone(context['environment']['shell'])
+        self.assertIsNone(context['environment']['environment_variables'])
+        self.assertFalse(context['bridge_observations']['referenced_files_frozen'])
+        self.assertFalse(context['bridge_observations']['referenced_files_inspected'])
+        self.assertEqual(self.fixture.requests,[])
+
+    def test_native_keeps_user_restrictions_and_metadata_when_tool_history_is_bounded(self):
+        self.records.append({'type':'USER_INPUT','source':'USER_EXPLICIT','status':'DONE',
+                             'content':'Do not deploy or delete the database.'})
+        for index in range(80):
+            self.records.append({'type':'GENERIC','source':'MODEL','status':'DONE',
+                                 'content':f'TOOL_EVIDENCE_{index:03d} '+('x'*2000)})
+        self.write_records()
+        prepared=b.review(self.payload,self.config,True,'prepare')
+        transcript=json.dumps(prepared['input'])
+        self.assertNotIn('TOOL_EVIDENCE_000',transcript)
+        self.assertIn('TOOL_EVIDENCE_079',transcript)
+        self.assertIn('Run the tests.',transcript)
+        self.assertIn('Do not deploy or delete the database.',transcript)
+        self.assertEqual(self.execution_context(prepared['input'])['cwd'],str(self.root))
+        self.assertEqual(self.fixture.requests,[])
+
     def test_hook_process_fail_closed_on_malformed_input(self):
         process=subprocess.run([sys.executable,str(b.ROOT/'bridge.py'),'--config',str(self.config_path),'hook'],input=b'{',capture_output=True)
         self.assertEqual(process.returncode,0)

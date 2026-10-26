@@ -31,3 +31,7 @@ Installer tests cover private config generation, build reuse, custom-policy/othe
 ## Audit development
 
 `guardian_bridge/audit.py` writes private JSONL decisions; `audit.sh` and `scripts/audit.py` provide the read-only viewer. Regressions cover exact-command correlation, approved/denied/error separation, stale approvals, metadata-only privacy, symlink/file-permission rejection, concurrent writes, incomplete records and terminal-control escaping.
+
+## Execution context regressions
+
+Host tests cover explicit versus inferred cwd, ambiguous workspaces, shell/environment unknowns, source labels on caller declarations, rejecting conflicting directories, and avoiding process-environment collection. Native fixture tests inspect the actual Responses input to verify a standalone cwd reaches the model without changing tool arguments, inferred metadata stays explicit, and genuine user restrictions survive while old tool evidence is bounded. These verify context delivery; they do not assert that a model can determine unseen script behavior or prevent referenced files from changing before execution. See [context and limitations](context-and-limitations.md).

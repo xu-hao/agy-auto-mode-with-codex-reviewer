@@ -67,6 +67,7 @@ def base(request, details):
         'session_id': request.get('session_id'),
         'step_index': environment.get('step_index') if isinstance(environment, dict) else None,
         'cwd': request.get('cwd'),
+        'cwd_source': environment.get('cwd_source') if isinstance(environment, dict) else None,
         'tool': action.get('tool'),
         'action_sha256': hashlib.sha256(encoded(action)).hexdigest(),
         'execution_status': 'not_observed',

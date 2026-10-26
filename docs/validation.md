@@ -1,12 +1,12 @@
 # Validation performed
 
-Completed on 2026-10-25 in this workspace, against upstream Codex commit `970111f6cb62cc02fe36a82ea7d71b37a2889c97`.
+Baseline checks completed on 2026-10-25, with execution-context checks added on 2026-10-26 in this workspace, against upstream Codex commit `970111f6cb62cc02fe36a82ea7d71b37a2889c97`.
 
 | Check | Result |
 | --- | --- |
 | Native review-only binary | Built successfully with Rust 1.99.1 and the locked dependency graph |
 | Guardian/prompt source integrity | All 146 inspected files match the same pinned commit fetched by Cargo |
-| Automated host/native fixture tests | 56 tests pass |
+| Automated host/native fixture tests | 66 tests pass |
 | Live model/auth connectivity | Existing ChatGPT login returned a valid `codex-auto-review` assessment |
 | Live authorized local-write proposal | Guardian allowed; bridge did not execute it |
 | Live unauthorized credential-export proposal | Guardian denied; no credentials read or commands executed |
@@ -41,3 +41,11 @@ The installer scripts were exercised against an actual `codex-auto-review` infer
 ## Command decision audit
 
 The audit regression suite checks exact commands and reasons, request/session correlation, approvals versus review errors, stale-approval rejection, private log permissions, metadata-only mode, concurrent writers, incomplete-record handling and viewer filtering/escaping. The actual agy integration fixture also requires the audited command to match the exact marker-write proposal in its approval and rejection cases.
+
+## Execution context update
+
+The native reviewer was rebuilt after adding the standalone cwd to fixed model input and making execution metadata provenance/unknowns explicit. All 66 host/native/installer/audit tests pass. The compiled transport fixture verifies the actual Responses body contains the exact standalone cwd even without a tool-argument `Cwd`, optional caller shell/options remain labelled unverified, and inferred workspace context exposes missing shell/environment facts. An 80-record history case verifies older tool evidence is omitted while original and subsequent genuine user restrictions and the execution context remain present. Host regressions reject contradictory directory claims and invalid environment shapes and ensure the bridge does not copy its own process environment.
+
+Real Antigravity approval and rejection cases were rerun on 2026-10-26 with this reviewer build and metadata handling. Both passed using `codex-auto-review`: Antigravity created the approved marker and did not create the rejected marker. The sanitized [executor report](antigravity-validation.json) records the results.
+
+These checks establish context delivery and gate behavior. They do not establish safety for unseen scripts, verify inferred execution state or freeze referenced filesystem contents. Outstanding work and examples are documented in [context and limitations](context-and-limitations.md).

@@ -58,7 +58,9 @@ sequenceDiagram
     A->>A: Execute only if permitted
 ```
 
-`native/src/main.rs` is the new host entry point. It supplies upstream `ResponseItem` evidence, original authorization, immutable planned action, synchronous JSON transcript profile, permission context and request budget. It uses the selected model’s catalog policy messages with bundled fallbacks, keeping the original policy template and output contract. Operator environment/permissions are also included intact; optional caller evidence is explicitly untrusted and retained as complete input.
+`native/src/main.rs` is the new host entry point. It supplies upstream `ResponseItem` evidence, original authorization, immutable planned action, synchronous JSON transcript profile, permission context and request budget. It uses the selected model’s catalog policy messages with bundled fallbacks, keeping the original policy template and output contract. Operator permissions and execution metadata are included explicitly; optional caller evidence is explicitly untrusted and retained as complete input.
+
+The fixed developer context always renders the request's separate `cwd` alongside environment metadata and its source labels. A hook-provided `Cwd` is labelled explicit; a fallback workspace is labelled inferred. The hook's shell/options/variables remain unknown instead of assuming Bash or copying the bridge's process environment. Public CLI metadata is labelled caller-supplied and unverified; conflicting cwd declarations are rejected. These fields are budgeted outside transcript retention, and observations explicitly state that the bridge did not inspect or freeze referenced files. See [review context and remaining limitations](context-and-limitations.md) for examples and follow-up work.
 
 The native host uses upstream authentication/provider/client code and receives Responses events directly. No tool dispatcher exists. Proposed commands are data on stdin and in model input, never process arguments or shell code. Model tool calls are not dispatched. The only subprocess in the Python adapter is the fixed native binary. The optional live Antigravity test separately invokes `agy` to prove the executor-side behavior.
 
@@ -89,6 +91,8 @@ This assumes host logs and operator configuration are protected by the actual ex
 ## Deliberate runtime differences
 
 This implementation does not claim shipping-product equivalence. It has no read-only investigation tools; an action needing absent file contents can be denied conservatively. It does not import a Codex parent checkpoint, retained developer state, managed requirements, plugin descriptions, user override markers or enterprise config automatically. It does not implement async risk scoring, cached approvals, reviewer pooling, product telemetry, history compaction or Codex’s per-turn denial circuit breaker. Each pending Antigravity action is reviewed, including those that Codex would normally run without review inside its sandbox.
+
+Directory provenance, missing execution state, script inspection, bounded evidence and the interval between review and execution are covered in [the context and limitations guide](context-and-limitations.md). The action binding does not lock referenced filesystem contents or executor state.
 
 The adapter requires explicit operator model selection when an unavailable preferred model would otherwise trigger a different parent fallback. It reports the requested reviewer model, preferred model, catalog availability and explicit override. `server_model` is reported when the upstream transport exposes that header; absence does not prove an underlying model snapshot. Live success proves this account can perform review inference at the time tested, not universal model availability or an unchanged product rollout.
 

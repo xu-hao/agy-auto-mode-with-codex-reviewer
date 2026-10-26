@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -48,6 +49,65 @@ class HostTests(unittest.TestCase):
         self.assertEqual(request['action']['arguments'],self.payload['toolCall']['args'])
         self.assertEqual(request['history'][1]['provenance']['source'],'MODEL')
         self.assertFalse((self.root/'sentinel').exists())
+
+    def direct_payload(self, cwd=None, environment=None):
+        return {'request_id':'one','session_id':self.session,'transcript_path':str(self.transcript),
+                'action':{'tool':'run_command','arguments':{'CommandLine':'echo test'}},
+                'cwd':str(cwd or self.root),'environment':{} if environment is None else environment}
+
+    def test_hook_does_not_claim_bridge_shell_or_copy_environment(self):
+        with patch.dict(os.environ,{'SHELL':'/bin/zsh','BUILD_DIR':'PRIVATE_VALUE_NOT_TO_COLLECT'}):
+            request,_,_=b.normalize(self.payload,self.config,True)
+        environment=request['environment']
+        self.assertIsNone(environment['shell'])
+        self.assertIsNone(environment['shell_options'])
+        self.assertIsNone(environment['environment_variables'])
+        self.assertEqual(environment['shell_source'],'not reported by Antigravity hook')
+        self.assertIn('explicit tool Cwd',environment['cwd_source'])
+        self.assertNotIn('platform',environment)
+        self.assertNotIn('PRIVATE_VALUE_NOT_TO_COLLECT',json.dumps(request))
+
+    def test_missing_tool_cwd_is_labelled_inference_without_rewriting_action(self):
+        del self.payload['toolCall']['args']['Cwd']
+        request,_,_=b.normalize(self.payload,self.config,True)
+        self.assertEqual(request['cwd'],str(self.root))
+        self.assertIn('inferred single workspace',request['environment']['cwd_source'])
+        self.assertEqual(request['action']['arguments'],self.payload['toolCall']['args'])
+        self.assertNotIn('Cwd',request['action']['arguments'])
+
+    def test_multiple_workspaces_without_tool_cwd_are_ambiguous(self):
+        del self.payload['toolCall']['args']['Cwd']
+        self.payload['workspacePaths'].append(str(self.root/'second'))
+        with self.assertRaises(b.BridgeError):b.normalize(self.payload,self.config,True)
+
+    def test_caller_environment_is_labelled_and_not_mutated(self):
+        environment={'shell':'/bin/fish','declared_by':'verified executor',
+                     'cwd_source':'verified executor','shell_source':'verified executor','cwd':str(self.root)}
+        before=copy.deepcopy(environment)
+        request,_,_=b.normalize(self.direct_payload(environment=environment),self.config,False)
+        self.assertEqual(environment,before)
+        self.assertEqual(request['environment']['shell'],'/bin/fish')
+        for key in ('declared_by','cwd_source','shell_source'):
+            self.assertIn('not independently verified',request['environment'][key])
+        self.assertNotIn('cwd',request['environment'])
+
+    def test_missing_caller_shell_stays_unknown(self):
+        request,_,_=b.normalize(self.direct_payload(),self.config,False)
+        self.assertIsNone(request['environment']['shell'])
+        self.assertEqual(request['environment']['shell_source'],'not supplied')
+
+    def test_invalid_caller_environment_is_rejected(self):
+        for value in (None,[], 'bash'):
+            with self.subTest(environment=value),self.assertRaises(b.BridgeError):
+                payload=self.direct_payload();payload['environment']=value
+                b.normalize(payload,self.config,False)
+
+    def test_conflicting_cwd_declarations_are_rejected(self):
+        payload=self.direct_payload(environment={'cwd':str(self.root/'other')})
+        with self.assertRaises(b.BridgeError):b.normalize(payload,self.config,False)
+        payload=self.direct_payload()
+        payload['action']['arguments']['Cwd']=str(self.root/'other')
+        with self.assertRaises(b.BridgeError):b.normalize(payload,self.config,False)
 
     def test_approve_maps_to_auto_approve(self):
         with patch.object(b,'native_call',side_effect=self.allowed):

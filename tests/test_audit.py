@@ -44,6 +44,7 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(record['reason'],'allowed')
         self.assertEqual(record['session_id'],self.fixture.session)
         self.assertEqual(record['cwd'],str(self.root))
+        self.assertEqual(record['cwd_source'],'explicit tool Cwd')
         self.assertEqual(record['execution_status'],'not_observed')
         self.assertTrue(record['binding'])
         self.assertEqual(stat.S_IMODE(self.log.stat().st_mode),0o600)
